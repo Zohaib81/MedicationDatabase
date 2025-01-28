@@ -1,0 +1,207 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+h1, h2, h3 {
+    text-align: center;
+    color: #333;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    display: block;
+    margin: 20px auto;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+table {
+    width: 80%; /* Constrain the table width */
+    margin: 20px auto; /* Center the table horizontally */
+    border-collapse: collapse;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #4CAF50;
+    color: white;
+}
+
+td ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+td ul li {
+    margin: 5px 0;
+}
+
+.hidden-column {
+    display: none;
+}
+
+.hidden {
+    display: none;
+}
+
+form {
+    margin-top: 30px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: left; /* Ensure form text is aligned left */
+}
+
+form label {
+    display: block; /* Make labels block-level elements */
+    margin-bottom: 5px; /* Add space between label and input */
+}
+
+form input {
+    width: 90%; /* Reduce input width */
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-width: 400px; /* Set max-width for better form control */
+}
+
+form button {
+    width: 90%; /* Ensure button isn't stretched too wide */
+    max-width: 400px;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+form button:hover {
+    background-color: #45a049;
+}
+
+/* Updated for better row grouping */
+td {
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.patient-table td {
+    border-top: 1px solid #ddd;
+}
+
+.patient-table td:first-child {
+    border-left: none; /* Remove the left border for the first column in each row */
+}
+
+#medication-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    z-index: 1000;
+    max-width: 500px;  /* Set max width for the modal */
+    width: 100%;  /* Ensure modal takes full width up to max-width */
+    height: auto;  /* Make the modal height adjustable based on content */
+    overflow: hidden;  /* Hide overflow outside the modal */
+    box-sizing: border-box;  /* Include padding and border in the element's total width and height */
+}
+
+/* Overlay background for the modal */
+#add-data-modal {
+    position: fixed; /* Make the modal fixed to the viewport */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it's above other content */
+    visibility: hidden; /* Hidden by default */
+}
+
+/* Make the modal visible when the class is removed */
+#add-data-modal.visible {
+    visibility: visible;
+}
+
+.modal-content {
+    max-height: 400px;  /* Set a max-height to allow scrolling */
+    overflow-y: auto;  /* Allow vertical scrolling when content overflows */
+    padding-right: 10px;  /* Add padding for scrollbar */
+    text-align: left;
+    background-color: #fff; /* Ensure background color for modal content */
+    padding: 46px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 80%; /* Set width to a more manageable value */
+    max-width: 600px; /* Limit the maximum width */
+}
+
+.close-button {
+    float: right;
+    font-size: 28px;
+    color: #f44336; /* Change color to red for better visibility */
+    cursor: pointer;
+}
+
+/* Ensure the modal background and text colors are more visible */
+.modal-content h3 {
+    color: #333; /* Dark text color for the heading */
+}
+
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+    color: #333; /* Text color inside the inputs */
+}
+
+#schedule-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    z-index: 1000;
+    max-width: 500px;  /* Set max width for the modal */
+    width: 100%;  /* Ensure modal takes full width up to max-width */
+    height: auto;  /* Make the modal height adjustable based on content */
+    overflow: hidden;  /* Hide overflow outside the modal */
+    box-sizing: border-box;
+    border: solid #5B6DCD 10px;
+    padding: 5px;
+}

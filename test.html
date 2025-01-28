@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <h1>Welcome to the Dashboard</h1>
+    <button id="logout-button">Logout</button>
+    <h2>Patient information from the Firestore Database will be displayed here:</h2>
+    <div id="data-container"></div>
+
+    <!-- Add Data Modal -->
+    <div id="add-data-modal" class="hidden">
+        <div class="modal-content">
+            <span id="close-modal" class="close-button">&times;</span>
+            <h3>Add Patient Data</h3>
+            <form id="add-data-form">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required>
+                <label for="dob">DOB:</label>
+                <input type="text" id="dob" name="dob" placeholder="DD/MM/YYYY" required>
+                <label for="gender">Gender:</label>
+                <input type="text" id="gender" name="gender" required>
+                <label for="emergency_contact.name">Emergency Contact Name:</label>
+                <input type="text" id="emergency_contact.name" name="emergency_contact.name" required>
+                <label for="emergency_contact.phone">Emergency Contact Phone:</label>
+                <input type="text" id="emergency_contact.phone" name="emergency_contact.phone" required>
+                <label for="emergency_contact.email">Emergency Contact Email:</label>
+                <input type="text" id="emergency_contact.email" name="emergency_contact.email" required>
+                <h3>Conditions and Medications:</h3>
+                <div id="conditions-container">
+                    <div class="condition-group">
+                        <label for="condition_1">Condition:</label>
+                        <input type="text" id="condition_1" name="conditions[]" placeholder="Enter a single condition" required>
+            
+                        <label for="medication_1">Medication(s) for this condition:</label>
+                        <input type="text" id="medication_1" name="medications[]" placeholder="Comma separated (,)" required>
+            
+                        <button type="button" class="add-condition">Add Another Condition</button>
+                    </div>
+                </div>
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+    </div>
+
+    <button id="add-data-button">Add Patient Data</button>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-firestore.js';
+        import { getAuth, signOut, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-auth.js';
+        import { doc, getDoc, setDoc, updateDoc, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-firestore.js';
+        import { query, orderBy, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDI91Hjo2CN0tsZGTx4esbjxAv63bgfsfU",
+            authDomain: "medication-database-daafa.firebaseapp.com",
+            projectId: "medication-database-daafa",
+            storageBucket: "medication-database-daafa.appspot.com",
+            messagingSenderId: "596453094865",
+            appId: "1:596453094865:web:0cfd911a6605b299399cf0",
+            measurementId: "G-V3NJ48JFZE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        async function checkAndDeleteOldestPatient(name, dob) {
+            const db = getFirestore();
+            const patientsRef = collection(db, "Patient Information");
+
+            try {
+                // Query patients with matching name and DOB
+                const q = query(patientsRef, where("name", "==", name), where("dob", "==", dob));
+                const querySnapshot = await getDocs(q);
+
+                const matchingPatients = [];
+                querySnapshot.forEach(doc => {
+                    matchingPatients.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Sort matching patients by creation timestamp
+                matchingPatients.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+                // If there are multiple matching patients
+                if (matchingPatients.length > 1) {
+                    const oldestPatient = matchingPatients[0]; // Oldest record
+                    await deleteDoc(doc(db, "Patient Information", oldestPatient.id));
+                    console.log(`Deleted oldest patient record with ID: ${oldestPatient.id}`);
+                } else {
+                    console.log("No duplicate patient records found.");
+                }
+            } catch (error) {
+                console.error("Error checking or deleting patient records:", error);
+            }
+        }
+
+        const querySnapshot = await getDocs(collection(db, "Patient Information"));
+        let tableHTML = `
+            <table class="patient-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>DOB</th>
+                        <th>Gender</th>
+                        <th>Emergency Contact Name</th>
+                        <th>Emergency Contact Phone</th>
+                        <th>Emergency Contact Email</th>
+                        <th>Condition(s)</th>
+                        <th>Medication(s)</th>
+                        <th>Medication Schedule</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const emergencyContact = data.emergency_contact || {};
+            const medicalConditions = data.medical_conditions || {};
+
+            let conditionsHTML = "";
+            if (data.medical_conditions) {
+                for (const condition in data.medical_conditions) {
+                    if (data.medical_conditions.hasOwnProperty(condition)) {
+                        const medications = data.medical_conditions[condition].medications || [];
+                        const medicationLinks = medications.map(
+                            (med) => `<a href="#" class="medication-link" data-medication="${med}" data-patient-name="${data.name || 'N/A'}">${med}</a>`
+                        );
+                        conditionsHTML += `
+                            <strong>${condition}:</strong> ${medicationLinks.join(", ")}<br>
+                        `;
+                    }
+                }
+            }
+
+            tableHTML += `
+                <tr>
+                    <td>${data.name || 'N/A'}</td>
+                    <td>${data.dob || 'N/A'}</td>
+                    <td>${data.gender || 'N/A'}</td>
+                    <td>${data.emergency_contact.name || 'N/A'}</td>
+                    <td>${data.emergency_contact.phone || 'N/A'}</td>
+                    <td>${data.emergency_contact.email || 'N/A'}</td>
+                    <td>${Object.keys(data.medical_conditions) || 'N/A'}</td>
+                    <td>${conditionsHTML || 'N/A'}</td>
+                    <td>
+                        <button class="generate-schedule-button" data-patient-name="${data.name}" data-patient-dob="${data.dob}">
+                            Show and Add/Update Schedule to Firebase
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tableHTML += `
+                </tbody>
+            </table>
+        `;
+
+        document.getElementById("data-container").innerHTML = tableHTML;
+        
+        document.querySelectorAll(".medication-link").forEach((link) => {
+            link.addEventListener("click", async (event) => {
+                event.preventDefault();
+                const medicationName = event.target.dataset.medication;
+                const patientName = event.target.dataset.patientName;
+
+                // Fetch medication information from Firestore
+                const medicationDoc = await getDoc(doc(db, "Medication Information", medicationName));
+                if (medicationDoc.exists()) {
+                    const medData = medicationDoc.data();
+                    displayMedicationInfo(medData, patientName);
+                } else {
+                    alert("Medication information not found!");
+                }
+            });
+        });
+
+
+        function displayMedicationInfo(medData, patientName) {
+            const infoHTML = `
+                <h3>${medData.medication}</h3>
+                <p><strong>Medical Conditions:</strong> ${medData.medical_conditions}</p>
+                <p><strong>Common Side Effects:</strong> ${medData.common_side_effects}</p>
+                <p><strong>Severe Side Effects:</strong> ${medData.severe_side_effects}</p>
+                <p><strong>Dosage:</strong></p>
+                <ul>
+                    ${Object.entries(medData.dosage)
+                        .map(([condition, dosage]) =>
+                            `<li><strong>${condition.replace(/_/g, " ")}:</strong> ${dosage}</li>`
+                        )
+                        .join("")}
+                </ul>
+                <p><strong>Drug Interactions:</strong> ${medData.drug_interactions}</p>
+                <p><strong>Other Interactions:</strong> ${medData.other_interactions}</p>
+                <p><strong>Usage Instructions:</strong></p>
+                <ul>
+                    <li><strong>Food:</strong> ${medData.usage_instructions.food}</li>
+                    <li><strong>Water:</strong> ${medData.usage_instructions.water}</li>
+                    <li><strong>Form:</strong> ${medData.usage_instructions.form}</li>
+                    <li><strong>Missed Dose:</strong> ${medData.usage_instructions.missed_dose}</li>
+                </ul>
+                <p><strong>Storage:</strong> ${medData.storage}</p>
+                <p><strong>Compartment ID:</strong> ${medData.compartment_id}</p>
+                <p><strong>Inventory:</strong> ${medData.inventory}</p>
+            `;
+
+            // Create modal
+            const modal = document.createElement("div");
+            modal.id = "medication-modal";
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close-button">&times;</span>
+                    ${infoHTML}
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Close modal functionality
+            const closeButton = modal.querySelector(".close-button");
+            closeButton.addEventListener("click", () => {
+                document.body.removeChild(modal); // Remove the modal from the DOM
+            });
+        }
+
+
+    // Add this function to generate a medication schedule
+  async function generateMedicationSchedule(patientData) {
+    if (!patientData || !patientData.medical_conditions) {
+        console.error("Invalid patient data:", patientData);
+        return null;
+    }
+
+    const conditions = patientData.medical_conditions || {};
+    const schedule = [];
+    for (const condition in conditions) {
+        const medications = conditions[condition].medications || [];
+        medications.forEach((medication) => {
+            if (medication === "Acetaminophen") {
+                schedule.push({ time: "8:00 AM", medication, dosage: "500 mg", condition });
+                schedule.push({ time: "2:00 PM", medication, dosage: "500 mg", condition });
+                schedule.push({ time: "8:00 PM", medication, dosage: "500 mg", condition });
+            } else if (medication === "Ibuprofen") {
+                schedule.push({ time: "8:00 AM", medication, dosage: "200 mg", condition });
+                schedule.push({ time: "8:00 PM", medication, dosage: "200 mg", condition });
+            } else if (medication === "Lisinopril") {
+                schedule.push({ time: "7:30 AM", medication, dosage: "10 mg", condition });
+            } else if (medication === "Amlodipine") {
+                schedule.push({ time: "8:30 PM", medication, dosage: "5 mg", condition });
+            }
+        });
+    }
+
+    schedule.sort((a, b) => {
+        const timeA = parseTime(a.time);
+        const timeB = parseTime(b.time);
+        return timeA - timeB;
+    });
+
+    try {
+        const user = await getAuth().currentUser;
+        if (user && patientData.name && patientData.dob) {
+            const patientRef = query(
+                collection(db, "Patient Information"),
+                where("name", "==", patientData.name),
+                where("dob", "==", patientData.dob)
+            );
+            const querySnapshot = await getDocs(patientRef);
+
+            if (!querySnapshot.empty) {
+                // Assuming the first match is correct, you can modify this as per your needs
+                const patientDoc = querySnapshot.docs[0];
+                await updateDoc(patientDoc.ref, {
+                    medication_schedule: schedule
+                });
+
+                console.log("Medication schedule updated successfully in Firestore.");
+            } else {
+                console.warn("No patient data found with the provided name and dob.");
+            }
+        } else {
+            console.warn("User is not authenticated or name/dob is missing.");
+        }
+    } catch (error) {
+        console.error("Error updating medication schedule in Firestore:", error);
+    }
+
+    return { patientName: patientData.name, schedule };
+}
+
+// Helper function to parse time strings (e.g., "8:00 AM") into minutes for sorting
+function parseTime(timeStr) {
+    const [time, period] = timeStr.split(' ');
+    const [hours, minutes] = time.split(':').map(Number);
+    const adjustedHours = period === "PM" && hours !== 12 ? hours + 12 : hours;
+    return adjustedHours * 60 + minutes;
+}
+
+function displaySchedule(patientName, schedule) {
+    if (!schedule || schedule.length === 0) {
+        console.error("Invalid or empty schedule.");
+        return;
+    }
+
+    const scheduleHTML = `
+        <h3>Medication Schedule For: ${patientName}</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Medication</th>
+                    <th>Dosage</th>
+                    <th>Condition</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${schedule
+                    .map(
+                        (entry) => `
+                        <tr>
+                            <td>${entry.time}</td>
+                            <td>${entry.medication}</td>
+                            <td>${entry.dosage}</td>
+                            <td>${entry.condition}</td>
+                        </tr>
+                    `
+                    )
+                    .join("")}
+            </tbody>
+        </table>
+        <button class="close-schedule-button">Close</button>
+    `;
+
+    const modal = document.createElement("div");
+    modal.id = "schedule-modal";
+    modal.innerHTML = `
+        <div class="modal-content">
+            ${scheduleHTML}
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector(".close-schedule-button").addEventListener("click", () => {
+        document.body.removeChild(modal);
+    });
+}
+
+document.addEventListener("click", async (event) => {
+    if (event.target && event.target.classList.contains("generate-schedule-button")) {
+        const patientName = event.target.dataset.patientName;
+        const patientDob = event.target.dataset.patientDob;  // Make sure dob is included in the data attributes
+
+        try {
+            const docRef = query(
+                collection(db, "Patient Information"),
+                where("name", "==", patientName),
+                where("dob", "==", patientDob)
+            );
+            const docSnap = await getDocs(docRef);
+
+            if (!docSnap.empty) {
+                const patientData = docSnap.docs[0].data();
+                const result = await generateMedicationSchedule(patientData);
+                if (result) {
+                    displaySchedule(result.patientName, result.schedule);
+                }
+            } else {
+                alert("No patient data found!");
+            }
+        } catch (error) {
+            console.error("Error fetching patient data:", error);
+        }
+    }
+});
+
+
+
+        // Add event listener to "Add Data" button
+        document.getElementById("add-data-button").addEventListener("click", () => {
+            // Show the modal by adding the 'visible' class
+            document.getElementById("add-data-modal").classList.add("visible");
+        });
+
+        // Add event listener to close "Add Data" modal button
+        document.getElementById("close-modal").addEventListener("click", () => {
+            // Hide the modal by removing the 'visible' class
+            document.getElementById("add-data-modal").classList.remove("visible");
+        });
+
+        document.getElementById("logout-button").addEventListener("click", async () => {
+            try {
+                await signOut(auth);
+                alert("You have been logged out.");
+                window.location.href = "index.html";
+            } catch (error) {
+                console.error("Logout error:", error.message);
+                alert("Failed to log out: " + error.message);
+            }
+        });
+
+        document.getElementById("add-data-form").addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const Name = document.getElementById('name').value;
+            const DOB = document.getElementById('dob').value;
+            const gender = document.getElementById('gender').value;
+            const emergencyContactName = document.getElementById('emergency_contact.name').value;
+            const emergencyContactPhone = document.getElementById('emergency_contact.phone').value;
+            const emergencyContactEmail = document.getElementById('emergency_contact.email').value;
+            
+            const conditions = [];
+            const conditionInputs = document.querySelectorAll('[name="conditions[]"]');
+            const medicationInputs = document.querySelectorAll('[name="medications[]"]');
+
+            conditionInputs.forEach((input, index) => {
+                const condition = input.value;
+                const medications = medicationInputs[index].value.split(',').map(med => med.trim());
+                conditions.push({ condition, medications });
+            });
+
+
+
+
+            function addPatientData() {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                console.log("Authenticated user:", user.email);
+
+                try {
+                    // Patient data
+                    const patientData = {
+                    name: Name,
+                    dob: DOB,
+                    gender: gender,
+                    emergency_contact: {
+                        name: emergencyContactName,
+                        phone: emergencyContactPhone,
+                        email: emergencyContactEmail,
+                    },
+                    medical_conditions: conditions.reduce((acc, { condition, medications }) => {
+                        acc[condition] = { medications }; // Link condition with medications
+                        return acc;
+                    }, {}),
+                    };
+
+                    // Step 1: Query for existing patient with the same name and age
+                    const patientQuery = query(
+                    collection(db, "Patient Information"),
+                    where("name", "==", patientData.name),
+                    where("dob", "==", patientData.dob)
+                    );
+
+                    const querySnapshot = await getDocs(patientQuery);
+
+                    if (!querySnapshot.empty) {
+                    // Step 2: If a match is found, update the first matching document
+                    const docRef = querySnapshot.docs[0].ref;
+                    await updateDoc(docRef, patientData);
+                    console.log("Existing patient data updated successfully!");
+                    } else {
+                    // Step 3: If no match is found, create a new document
+                    await addDoc(collection(db, "Patient Information"), patientData);
+                    console.log("No match found. New patient data added successfully!");
+                    }
+                } catch (error) {
+                    console.error("Error adding or updating data:", error);
+                }
+                } else {
+                console.warn("No user is authenticated.");
+                }
+            });
+            }
+
+            // Call addPatientData after authentication is completed
+            onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log("User is authenticated. Proceeding with adding patient data...");
+                addPatientData();
+            } else {
+                console.log("User is not authenticated yet.");
+            }
+            });
+
+        })
+
+        // Add new condition input field when the user clicks "Add Another Condition"
+        document.getElementById("conditions-container").addEventListener("click", function(event) {
+            if (event.target && event.target.classList.contains("add-condition")) {
+                const conditionGroup = document.createElement("div");
+                conditionGroup.classList.add("condition-group");
+
+                // Create condition input
+                conditionGroup.innerHTML = `
+                    <label for="condition">Condition:</label>
+                    <input type="text" name="conditions[]" required>
+
+                    <label for="medication">Medication(s) for this condition:</label>
+                    <input type="text" name="medications[]" required>
+
+                    <button type="button" class="remove-condition">Remove Condition</button>
+                `;
+
+                document.getElementById("conditions-container").appendChild(conditionGroup);
+            }
+        });
+
+        // Remove condition input field
+        document.getElementById("conditions-container").addEventListener("click", function(event) {
+            if (event.target && event.target.classList.contains("remove-condition")) {
+                event.target.closest(".condition-group").remove();
+            }
+        });
+    </script>
+
+</body>
+</html>

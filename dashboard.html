@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <h1>Welcome to the Dashboard</h1>
+    <button id="logout-button">Logout</button>
+    <p>Patient information from the Firestore Database will be displayed here:</p>
+    <div id="data-container"></div>
+
+    <h2>Add Patient Data</h2>
+    <form id="patient-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" required />
+        <br />
+        <label for="age">Age:</label>
+        <input type="number" id="age" required />
+        <br />
+        <label for="gender">Gender:</label>
+        <input type="text" id="gender" required />
+        <br />
+        <label for="emergency contact name">Emergency Contact Name:</label>
+        <input type="text" id="emergency contact name" required />
+        <br />
+        <label for="emergency contact info">Emergency Contact Info:</label>
+        <input type="text" id="emergency contact info" required />
+        <br />
+        <label for="condition(s)">Condition(s):</label>
+        <input type="text" id="condition(s)" required />
+        <br />
+        <label for="medication(s)">Medication(s):</label>
+        <input type="text" id="medication(s)" required />
+        <br />
+        <button type="submit">Add Patient</button>
+    </form>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-firestore.js';
+        import { getAuth, signOut } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDI91Hjo2CN0tsZGTx4esbjxAv63bgfsfU",
+            authDomain: "medication-database-daafa.firebaseapp.com",
+            projectId: "medication-database-daafa",
+            storageBucket: "medication-database-daafa.appspot.com",
+            messagingSenderId: "596453094865",
+            appId: "1:596453094865:web:0cfd911a6605b299399cf0",
+            measurementId: "G-V3NJ48JFZE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        async function fetchData() {
+    const dataContainer = document.getElementById("data-container");
+
+    try {
+        const querySnapshot = await getDocs(collection(db, "Patient Information"));
+
+        if (querySnapshot.empty) {
+            dataContainer.innerHTML = "<p>No patient data available.</p>";
+            return;
+        }
+
+        let tableHTML = `
+            <table class="patient-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Gender</th>
+                        <th>Emergency Contact Name</th>
+                        <th>Emergency Contact Phone</th>
+                        <th>Emergency Contact Email</th>
+                        <th>Condition</th>
+                        <th>Medication</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const emergencyContact = data.emergency_contact || {};
+            const medicalConditions = data.medical_conditions || {};
+
+            let patientRows = 1; // Starts at 1 to account for the first row for the patient's general information
+
+            // Generate a row for each condition and its medications
+            Object.entries(medicalConditions).forEach(([condition, details]) => {
+                const medications = details.medications || [];
+                const conditionRow = `
+                    <tr>
+                        ${patientRows === 1 ? `<td rowspan="${Object.entries(medicalConditions).length * 3}">${data.name || "N/A"}</td>` : ''}
+                        ${patientRows === 1 ? `<td rowspan="${Object.entries(medicalConditions).length * 3}">${data.age || "N/A"}</td>` : ''}
+                        ${patientRows === 1 ? `<td rowspan="${Object.entries(medicalConditions).length * 3}">${data.gender || "N/A"}</td>` : ''}
+                        ${patientRows === 1 ? `<td rowspan="${Object.entries(medicalConditions).length * 3}">${emergencyContact.name || "N/A"}</td>` : ''}
+                        ${patientRows === 1 ? `<td rowspan="${Object.entries(medicalConditions).length * 3}">${emergencyContact.phone || "N/A"}</td>` : ''}
+                        ${patientRows === 1 ? `<td rowspan="${Object.entries(medicalConditions).length * 3}">${emergencyContact.email || "N/A"}</td>` : ''}
+                        <td>${condition}</td>
+                        <td>${medications[0] || "N/A"}</td>
+                    </tr>
+                `;
+
+                // Add rows for the medications for this condition
+                medications.slice(1).forEach((medication) => {
+                    tableHTML += `
+                        <tr>
+                            <td></td> <!-- Empty cell for condition column -->
+                            <td>${medication || "N/A"}</td>
+                        </tr>
+                    `;
+                    patientRows++;
+                });
+
+                tableHTML += conditionRow;
+            });
+        });
+
+        tableHTML += `
+            </tbody>
+        </table>
+        `;
+
+        dataContainer.innerHTML = tableHTML;
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        dataContainer.innerHTML = "<p>Error fetching data. Please try again later.</p>";
+    }
+}
+
+
+        fetchData();
+
+        document.getElementById("logout-button").addEventListener("click", async () => {
+            try {
+                await signOut(auth);
+                alert("You have been logged out.");
+                window.location.href = "index.html";
+            } catch (error) {
+                console.error("Logout error:", error.message);
+                alert("Failed to log out: " + error.message);
+            }
+        });
+
+        function toggleIDColumn() {
+            const idCells = document.querySelectorAll(".hidden-column");
+            idCells.forEach(cell => {
+                if (cell.style.display === "none") {
+                    cell.style.display = "table-cell";
+                } else {
+                    cell.style.display = "none";
+                }
+            });
+        }
+
+        const toggleButton = document.createElement("button");
+        toggleButton.textContent = "Show/Hide ID Column";
+        toggleButton.style.marginBottom = "20px";
+        toggleButton.addEventListener("click", toggleIDColumn);
+
+        document.body.insertBefore(toggleButton, document.getElementById("data-container"));
+    </script>
+</body>
+</html>
