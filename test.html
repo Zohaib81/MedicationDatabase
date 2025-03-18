@@ -1,521 +1,712 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patient Dashboard</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Dashboard</title>
+  <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-    <h1>Welcome to the Dashboard</h1>
-    <button id="logout-button">Logout</button>
-    <h2>Patient information from the Firestore Database will be displayed here:</h2>
-    <div id="data-container"></div>
+  <script>
+    function openTab(evt, tabName) {
+      console.log("Opening tab:", tabName);
+      var i, tabcontent, tablinks;
+      tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+      }
+      tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].classList.remove("active");
+      }
+      document.getElementById(tabName).style.display = "block";
+      evt.currentTarget.classList.add("active");
+    }
 
-    <!-- Add Data Modal -->
-    <div id="add-data-modal" class="hidden">
-        <div class="modal-content">
-            <span id="close-modal" class="close-button">&times;</span>
-            <h3>Add Patient Data</h3>
-            <form id="add-data-form">
-                <label for="name">Name:</label>
-                <input type="text" id="name" name="name" required>
-                <label for="dob">DOB:</label>
-                <input type="text" id="dob" name="dob" placeholder="DD/MM/YYYY" required>
-                <label for="gender">Gender:</label>
-                <input type="text" id="gender" name="gender" required>
-                <label for="emergency_contact.name">Emergency Contact Name:</label>
-                <input type="text" id="emergency_contact.name" name="emergency_contact.name" required>
-                <label for="emergency_contact.phone">Emergency Contact Phone:</label>
-                <input type="text" id="emergency_contact.phone" name="emergency_contact.phone" required>
-                <label for="emergency_contact.email">Emergency Contact Email:</label>
-                <input type="text" id="emergency_contact.email" name="emergency_contact.email" required>
-                <h3>Conditions and Medications:</h3>
-                <div id="conditions-container">
-                    <div class="condition-group">
-                        <label for="condition_1">Condition:</label>
-                        <input type="text" id="condition_1" name="conditions[]" placeholder="Enter a single condition" required>
-            
-                        <label for="medication_1">Medication(s) for this condition:</label>
-                        <input type="text" id="medication_1" name="medications[]" placeholder="Comma separated (,)" required>
-            
-                        <button type="button" class="add-condition">Add Another Condition</button>
-                    </div>
-                </div>
-                <button type="submit">Submit</button>
-            </form>
+    // Open the Patients tab by default
+    document.addEventListener("DOMContentLoaded", function() {
+      document.getElementById("Patients").style.display = "block";
+      var firstTab = document.querySelector(".tablinks");
+      if (firstTab) {
+        firstTab.classList.add("active");
+      }
+    });
+  </script>
+
+  <h1>Welcome to MediAlly's User Interface!</h1>
+  <button id="logout-button">Logout</button>
+  <h2>Select a patient and view their details:</h2>
+
+  <div class="tab">
+    <button class="tablinks" onclick="openTab(event, 'Patients')">Patients</button>
+    <button class="tablinks" onclick="openTab(event, 'BasicInfo')">Basic Info</button>
+    <button class="tablinks" onclick="openTab(event, 'MedicalDetails')">Medical Details</button>
+    <button class="tablinks" onclick="openTab(event, 'Appointments')">Appointments</button>
+    <button class="tablinks" onclick="openTab(event, 'Insurance')">Insurance & Directives</button>
+    <button class="tablinks" onclick="openTab(event, 'QA')">QA</button>
+  </div>
+  
+  <!-- Patients Tab Content -->
+  <div id="Patients" class="tabcontent">
+    <h3>Patients</h3>
+    <div id="patient-list"></div>
+  </div>
+
+  <!-- Basic Info Tab Content -->
+  <div id="BasicInfo" class="tabcontent">
+    <h3>Basic Information</h3>
+    <p><strong>Name:</strong> <span id="name">N/A</span></p>
+    <p><strong>DOB:</strong> <span id="dob">N/A</span></p>
+    <p><strong>Gender:</strong> <span id="gender">N/A</span></p>
+    <p><strong>Marital Status:</strong> <span id="marital_status">N/A</span></p>
+    <p><strong>Blood Type:</strong> <span id="blood_type">N/A</span></p>
+    <h4>Emergency Contact</h4>
+    <p><strong>Name:</strong> <span id="emergency_name">N/A</span></p>
+    <p><strong>Phone:</strong> <span id="emergency_phone">N/A</span></p>
+    <p><strong>Email:</strong> <span id="emergency_email">N/A</span></p>
+  </div>
+  
+  <!-- Medical Details Tab Content -->
+  <div id="MedicalDetails" class="tabcontent">
+    <h3>Medical Conditions & Medications</h3>
+    <p id="medical_conditions">N/A</p>
+    <h4>Medication Schedule</h4>
+    <!-- Medication names rendered as clickable links -->
+    <p id="medication_schedule">N/A</p>
+    <h4>Allergies</h4>
+    <p id="allergies">N/A</p>
+    <h4>Family Medical History</h4>
+    <p id="family_medical_history">N/A</p>
+    <h4>Vaccination History</h4>
+    <p id="vaccination_history">N/A</p>
+  </div>
+  
+  <!-- Appointments Tab Content -->
+  <div id="Appointments" class="tabcontent">
+    <h3>Appointments & Notes</h3>
+    <p id="appointment_notes">N/A</p>
+  </div>
+  
+  <!-- Insurance Tab Content -->
+  <div id="Insurance" class="tabcontent">
+    <h3>Insurance & Directives</h3>
+    <h4>Insurance</h4>
+    <p><strong>Provider:</strong> <span id="insurance_provider">N/A</span></p>
+    <p><strong>Policy Number:</strong> <span id="policy_number">N/A</span></p>
+    <p><strong>Group Number:</strong> <span id="group_number">N/A</span></p>
+    <h4>Advance Directives</h4>
+    <p><strong>DNR:</strong> <span id="dnr">N/A</span></p>
+    <p><strong>Organ Donor:</strong> <span id="organ_donor">N/A</span></p>
+    <p><strong>Living Will:</strong> <span id="living_will">N/A</span></p>
+  </div>
+
+  <!-- QA Tab Content -->
+  <div id="QA" class="tabcontent">
+    <h3>Questions and Answers</h3>
+    <label for="qa-filter">Filter by date:</label>
+    <select id="qa-filter">
+      <option value="all">All Dates</option>
+    </select>
+    <div id="qa-list"></div>
+  </div>
+
+  <!-- Add Data Modal -->
+  <div id="add-data-modal" class="hidden">
+    <div class="modal-content">
+      <span id="close-modal" class="close-button">&times;</span>
+      <h3>Add Patient Data</h3>
+      <form id="add-data-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+        <label for="dob">DOB:</label>
+        <input type="text" id="dob" name="dob" placeholder="DD/MM/YYYY" required>
+        <label for="gender">Gender:</label>
+        <input type="text" id="gender" name="gender" required>
+        <label for="emergency_contact.name">Emergency Contact Name:</label>
+        <input type="text" id="emergency_contact.name" name="emergency_contact.name" required>
+        <label for="emergency_contact.phone">Emergency Contact Phone:</label>
+        <input type="text" id="emergency_contact.phone" name="emergency_contact.phone" required>
+        <label for="emergency_contact.email">Emergency Contact Email:</label>
+        <input type="text" id="emergency_contact.email" name="emergency_contact.email" required>
+        <h3>Conditions and Medications:</h3>
+        <div id="conditions-container">
+          <div class="condition-group">
+            <label for="condition_1">Condition:</label>
+            <input type="text" id="condition_1" name="conditions[]" placeholder="Enter a single condition" required>
+            <label for="medication_1">Medication(s) for this condition:</label>
+            <input type="text" id="medication_1" name="medications[]" placeholder="Comma separated (,)" required>
+            <button type="button" class="add-condition">Add Another Condition</button>
+          </div>
         </div>
+        <button type="submit">Submit</button>
+      </form>
     </div>
+  </div>
 
-    <button id="add-data-button">Add Patient Data</button>
+  <button id="add-data-button">Add Patient Data</button>
 
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-app.js';
-        import { getFirestore, collection, addDoc, getDocs } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-firestore.js';
-        import { getAuth, signOut, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-auth.js';
-        import { doc, getDoc, setDoc, updateDoc, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-firestore.js';
-        import { query, orderBy, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-firestore.js';
+  <!-- Add Medication Modal -->
+  <div id="add-medication-modal" class="hidden">
+    <div class="modal-content">
+      <span id="close-medication-modal" class="close-button">&times;</span>
+      <h3>Add Medication Data</h3>
+      <form id="add-medication-form">
+        <label for="medication">Medication Name:</label>
+        <input type="text" id="medication" name="medication" required>
+        <label for="common_side_effects">Common Side Effects:</label>
+        <input type="text" id="common_side_effects" name="common_side_effects" required>
+        <label for="severe_side_effects">Severe Side Effects:</label>
+        <input type="text" id="severe_side_effects" name="severe_side_effects" required>
+        <label for="drug_interactions">Drug Interactions:</label>
+        <input type="text" id="drug_interactions" name="drug_interactions" required>
+        <label for="other_interactions">Other Interactions:</label>
+        <input type="text" id="other_interactions" name="other_interactions" required>
+        <label for="medical_conditions">Medical Conditions:</label>
+        <input type="text" id="medical_conditions" name="medical_conditions" required>
+        <label for="inventory">Inventory:</label>
+        <input type="number" id="inventory" name="inventory" required>
+        <label for="compartment_id">Compartment ID:</label>
+        <input type="number" id="compartment_id" name="compartment_id" required>
+        <h3>Dosage Instructions:</h3>
+        <div id="dosage-container">
+          <div class="dosage-group">
+            <label for="dosage-condition-1">Condition:</label>
+            <input type="text" id="dosage-condition-1" name="dosage_conditions[]" required>
+            <label for="dosage-instruction-1">Dosage:</label>
+            <input type="text" id="dosage-instruction-1" name="dosage_instructions[]" required>
+            <button type="button" class="add-dosage">Add Another Dosage</button>
+          </div>
+        </div>
+        <h3>Usage Instructions:</h3>
+        <div id="usage-container">
+          <div class="usage-group">
+            <label for="usage-key-1">Instruction Type:</label>
+            <input type="text" id="usage-key-1" name="usage_keys[]" required>
+            <label for="usage-value-1">Instruction:</label>
+            <input type="text" id="usage-value-1" name="usage_values[]" required>
+            <button type="button" class="add-usage">Add Another Usage Instruction</button>
+          </div>
+        </div>
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  </div>
+  
+  <button id="open-medication-modal">Add Medication Data</button>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDI91Hjo2CN0tsZGTx4esbjxAv63bgfsfU",
-            authDomain: "medication-database-daafa.firebaseapp.com",
-            projectId: "medication-database-daafa",
-            storageBucket: "medication-database-daafa.appspot.com",
-            messagingSenderId: "596453094865",
-            appId: "1:596453094865:web:0cfd911a6605b299399cf0",
-            measurementId: "G-V3NJ48JFZE"
-        };
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-app.js';
+    import {
+      getFirestore, collection, addDoc, getDocs, onSnapshot,
+      query, where, updateDoc, deleteDoc, setDoc, doc, getDoc
+    } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-firestore.js';
+    import { getAuth, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.18.0/firebase-auth.js';
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-2osTMmKPmtnZ3rSZBFSDjf6yYlggEDg",
+      authDomain: "medication-database-medially.firebaseapp.com",
+      projectId: "medication-database-medially",
+      storageBucket: "medication-database-medially.firebasestorage.app",
+      messagingSenderId: "948401223720",
+      appId: "1:948401223720:web:d1fe5b64e829a018d55d1d",
+      measurementId: "G-CBGRD76QR9"
+    };
 
-        async function checkAndDeleteOldestPatient(name, dob) {
-            const db = getFirestore();
-            const patientsRef = collection(db, "Patient Information");
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-            try {
-                // Query patients with matching name and DOB
-                const q = query(patientsRef, where("name", "==", name), where("dob", "==", dob));
-                const querySnapshot = await getDocs(q);
+    // --------------------- Patient Functions ---------------------
 
-                const matchingPatients = [];
-                querySnapshot.forEach(doc => {
-                    matchingPatients.push({ id: doc.id, ...doc.data() });
-                });
-
-                // Sort matching patients by creation timestamp
-                matchingPatients.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
-                // If there are multiple matching patients
-                if (matchingPatients.length > 1) {
-                    const oldestPatient = matchingPatients[0]; // Oldest record
-                    await deleteDoc(doc(db, "Patient Information", oldestPatient.id));
-                    console.log(`Deleted oldest patient record with ID: ${oldestPatient.id}`);
-                } else {
-                    console.log("No duplicate patient records found.");
-                }
-            } catch (error) {
-                console.error("Error checking or deleting patient records:", error);
-            }
-        }
-
-        const querySnapshot = await getDocs(collection(db, "Patient Information"));
-        let tableHTML = `
-            <table class="patient-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>DOB</th>
-                        <th>Gender</th>
-                        <th>Emergency Contact Name</th>
-                        <th>Emergency Contact Phone</th>
-                        <th>Emergency Contact Email</th>
-                        <th>Condition(s)</th>
-                        <th>Medication(s)</th>
-                        <th>Medication Schedule</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const emergencyContact = data.emergency_contact || {};
-            const medicalConditions = data.medical_conditions || {};
-
-            let conditionsHTML = "";
-            if (data.medical_conditions) {
-                for (const condition in data.medical_conditions) {
-                    if (data.medical_conditions.hasOwnProperty(condition)) {
-                        const medications = data.medical_conditions[condition].medications || [];
-                        const medicationLinks = medications.map(
-                            (med) => `<a href="#" class="medication-link" data-medication="${med}" data-patient-name="${data.name || 'N/A'}">${med}</a>`
-                        );
-                        conditionsHTML += `
-                            <strong>${condition}:</strong> ${medicationLinks.join(", ")}<br>
-                        `;
-                    }
-                }
-            }
-
-            tableHTML += `
-                <tr>
-                    <td>${data.name || 'N/A'}</td>
-                    <td>${data.dob || 'N/A'}</td>
-                    <td>${data.gender || 'N/A'}</td>
-                    <td>${data.emergency_contact.name || 'N/A'}</td>
-                    <td>${data.emergency_contact.phone || 'N/A'}</td>
-                    <td>${data.emergency_contact.email || 'N/A'}</td>
-                    <td>${Object.keys(data.medical_conditions) || 'N/A'}</td>
-                    <td>${conditionsHTML || 'N/A'}</td>
-                    <td>
-                        <button class="generate-schedule-button" data-patient-name="${data.name}" data-patient-dob="${data.dob}">
-                            Show and Add/Update Schedule to Firebase
-                        </button>
-                    </td>
-                </tr>
-            `;
+    async function fetchPatientData() {
+      const querySnapshot = await getDocs(collection(db, "Patient Information"));
+      const patientListDiv = document.getElementById("patient-list");
+      patientListDiv.innerHTML = ""; // Clear existing list
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const btn = document.createElement("button");
+        btn.textContent = data.name || "Unnamed Patient";
+        btn.addEventListener("click", () => {
+          populateTabs(data);
         });
-
-        tableHTML += `
-                </tbody>
-            </table>
-        `;
-
-        document.getElementById("data-container").innerHTML = tableHTML;
-        
-        document.querySelectorAll(".medication-link").forEach((link) => {
-            link.addEventListener("click", async (event) => {
-                event.preventDefault();
-                const medicationName = event.target.dataset.medication;
-                const patientName = event.target.dataset.patientName;
-
-                // Fetch medication information from Firestore
-                const medicationDoc = await getDoc(doc(db, "Medication Information", medicationName));
-                if (medicationDoc.exists()) {
-                    const medData = medicationDoc.data();
-                    displayMedicationInfo(medData, patientName);
-                } else {
-                    alert("Medication information not found!");
-                }
-            });
-        });
-
-
-        function displayMedicationInfo(medData, patientName) {
-            const infoHTML = `
-                <h3>${medData.medication}</h3>
-                <p><strong>Medical Conditions:</strong> ${medData.medical_conditions}</p>
-                <p><strong>Common Side Effects:</strong> ${medData.common_side_effects}</p>
-                <p><strong>Severe Side Effects:</strong> ${medData.severe_side_effects}</p>
-                <p><strong>Dosage:</strong></p>
-                <ul>
-                    ${Object.entries(medData.dosage)
-                        .map(([condition, dosage]) =>
-                            `<li><strong>${condition.replace(/_/g, " ")}:</strong> ${dosage}</li>`
-                        )
-                        .join("")}
-                </ul>
-                <p><strong>Drug Interactions:</strong> ${medData.drug_interactions}</p>
-                <p><strong>Other Interactions:</strong> ${medData.other_interactions}</p>
-                <p><strong>Usage Instructions:</strong></p>
-                <ul>
-                    <li><strong>Food:</strong> ${medData.usage_instructions.food}</li>
-                    <li><strong>Water:</strong> ${medData.usage_instructions.water}</li>
-                    <li><strong>Form:</strong> ${medData.usage_instructions.form}</li>
-                    <li><strong>Missed Dose:</strong> ${medData.usage_instructions.missed_dose}</li>
-                </ul>
-                <p><strong>Storage:</strong> ${medData.storage}</p>
-                <p><strong>Compartment ID:</strong> ${medData.compartment_id}</p>
-                <p><strong>Inventory:</strong> ${medData.inventory}</p>
-            `;
-
-            // Create modal
-            const modal = document.createElement("div");
-            modal.id = "medication-modal";
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <span class="close-button">&times;</span>
-                    ${infoHTML}
-                </div>
-            `;
-            document.body.appendChild(modal);
-
-            // Close modal functionality
-            const closeButton = modal.querySelector(".close-button");
-            closeButton.addEventListener("click", () => {
-                document.body.removeChild(modal); // Remove the modal from the DOM
-            });
-        }
-
-
-    // Add this function to generate a medication schedule
-  async function generateMedicationSchedule(patientData) {
-    if (!patientData || !patientData.medical_conditions) {
-        console.error("Invalid patient data:", patientData);
-        return null;
+        patientListDiv.appendChild(btn);
+      });
     }
 
-    const conditions = patientData.medical_conditions || {};
-    const schedule = [];
-    for (const condition in conditions) {
-        const medications = conditions[condition].medications || [];
-        medications.forEach((medication) => {
-            if (medication === "Acetaminophen") {
-                schedule.push({ time: "8:00 AM", medication, dosage: "500 mg", condition });
-                schedule.push({ time: "2:00 PM", medication, dosage: "500 mg", condition });
-                schedule.push({ time: "8:00 PM", medication, dosage: "500 mg", condition });
-            } else if (medication === "Ibuprofen") {
-                schedule.push({ time: "8:00 AM", medication, dosage: "200 mg", condition });
-                schedule.push({ time: "8:00 PM", medication, dosage: "200 mg", condition });
-            } else if (medication === "Lisinopril") {
-                schedule.push({ time: "7:30 AM", medication, dosage: "10 mg", condition });
-            } else if (medication === "Amlodipine") {
-                schedule.push({ time: "8:30 PM", medication, dosage: "5 mg", condition });
-            }
-        });
+    function populateTabs(data) {
+      // Basic Info
+      document.getElementById("name").textContent = data.name || "N/A";
+      document.getElementById("dob").textContent = data.dob || "N/A";
+      document.getElementById("gender").textContent = data.gender || "N/A";
+      document.getElementById("marital_status").textContent = data.marital_status || "N/A";
+      document.getElementById("blood_type").textContent = data.blood_type || "N/A";
+      document.getElementById("emergency_name").textContent = data.emergency_contact?.name || "N/A";
+      document.getElementById("emergency_phone").textContent = data.emergency_contact?.phone || "N/A";
+      document.getElementById("emergency_email").textContent = data.emergency_contact?.email || "N/A";
+      // Medical Details
+      document.getElementById("medical_conditions").textContent =
+        Object.keys(data.medical_conditions || {}).join(", ") || "N/A";
+      // Render medication schedule with clickable links
+      document.getElementById("medication_schedule").innerHTML = Array.isArray(data.medication_schedule)
+        ? data.medication_schedule.map(schedule =>
+            `<a href="#" class="medication-link" data-medication="${schedule.medication}">${schedule.medication}</a> - ${schedule.dosage} at ${schedule.time}`
+          ).join("<br>")
+        : "N/A";
+      document.getElementById("allergies").textContent = (data.allergies || []).join(", ") || "N/A";
+      document.getElementById("family_medical_history").textContent =
+        `Father: ${data.family_medical_history?.Father?.join(", ") || "N/A"} | Mother: ${data.family_medical_history?.Mother?.join(", ") || "N/A"}`;
+      document.getElementById("appointment_notes").innerHTML = Array.isArray(data.appointment_notes)
+        ? data.appointment_notes.map(note => `<strong>Date:</strong> ${note.date} <br><strong>Notes:</strong> ${note.notes}`).join("<br>")
+        : "N/A";
+      document.getElementById("vaccination_history").innerHTML = Object.entries(data.vaccination_history || {}).map(
+        ([vaccine, date]) => `${vaccine}: ${date}`
+      ).join("<br>") || "N/A";
+      document.getElementById("insurance_provider").textContent = data.insurance?.provider || "N/A";
+      document.getElementById("policy_number").textContent = data.insurance?.policy_number || "N/A";
+      document.getElementById("group_number").textContent = data.insurance?.group_number || "N/A";
+      document.getElementById("dnr").textContent = data.advance_directives?.DNR || "N/A";
+      document.getElementById("organ_donor").textContent = data.advance_directives?.organ_donor || "N/A";
+      document.getElementById("living_will").textContent = data.advance_directives?.living_will_on_file || "N/A";
     }
 
-    schedule.sort((a, b) => {
-        const timeA = parseTime(a.time);
-        const timeB = parseTime(b.time);
-        return timeA - timeB;
+    // --------------------- Medication Modal Function ---------------------
+
+    function displayMedicationInfo(medData) {
+      const infoHTML = `
+        <h3>${medData.medication || "N/A"}</h3>
+        <p><strong>Active Ingredient:</strong> ${medData.active_ingredient || "N/A"}</p>
+        <p><strong>Brand Names:</strong> ${medData.brand_name || "N/A"}</p>
+        <p><strong>Medical Conditions:</strong> ${medData.medical_conditions || "N/A"}</p>
+        <p><strong>Common Side Effects:</strong> ${medData.common_side_effects || "N/A"}</p>
+        <p><strong>Severe Side Effects:</strong> ${medData.severe_side_effects || "N/A"}</p>
+        <p><strong>Onset of Action:</strong> ${medData.onset_of_action || "N/A"}</p>
+        <p><strong>Dosage:</strong></p>
+        <ul>
+          ${medData.dosage ? Object.entries(medData.dosage)
+            .map(([condition, dosage]) =>
+              `<li><strong>${condition.replace(/_/g, " ")}:</strong> ${dosage}</li>`
+            ).join("") : "<li>N/A</li>"}
+        </ul>
+        <p><strong>Drug Interactions:</strong> ${medData.drug_interactions || "N/A"}</p>
+        <p><strong>Other Interactions:</strong> ${medData.other_interactions || "N/A"}</p>
+        <p><strong>Usage Instructions:</strong></p>
+        <ul>
+          ${medData.usage_instructions ? `
+          <li><strong>Activity:</strong> ${medData.usage_instructions.activity || "N/A"}</li>
+          <li><strong>Food:</strong> ${medData.usage_instructions.food || "N/A"}</li>
+          <li><strong>Time:</strong> ${medData.usage_instructions.time || "N/A"}</li>
+          <li><strong>Water:</strong> ${medData.usage_instructions.water || "N/A"}</li>
+          ` : "<li>N/A</li>"}
+        </ul>
+        <p><strong>Storage:</strong> ${medData.storage || "N/A"}</p>
+        <p><strong>Compartment ID:</strong> ${medData.compartment_id != null ? medData.compartment_id : "N/A"}</p>
+        <p><strong>Inventory:</strong> ${medData.inventory != null ? medData.inventory : "N/A"}</p>
+        <p><strong>Expiration Date:</strong> ${medData.expiration_date || "N/A"}</p>
+        <p><strong>Lot Number:</strong> ${medData.lot_number || "N/A"}</p>
+        <p><strong>Inactive Ingredients:</strong> ${medData.inactive_ingredients ? medData.inactive_ingredients.join(", ") : "N/A"}</p>
+        <p><strong>Manufacturer Information:</strong></p>
+        <ul>
+          ${medData.manufacturer_information && medData.manufacturer_information.contact ? `
+          <li><strong>Name:</strong> ${medData.manufacturer_information.name || "N/A"}</li>
+          <li><strong>Phone:</strong> ${medData.manufacturer_information.contact.phone || "N/A"}</li>
+          <li><strong>International Phone:</strong> ${medData.manufacturer_information.contact.international_phone || "N/A"}</li>
+          ` : "<li>N/A</li>"}
+        </ul>
+        <p><strong>Warnings:</strong> ${medData.warnings ? medData.warnings.join("<br>") : "N/A"}</p>
+      `;
+      const modal = document.createElement("div");
+      modal.id = "medication-modal";
+      modal.innerHTML = `
+        <div class="modal-content">
+          <span class="close-button">&times;</span>
+          ${infoHTML}
+        </div>
+      `;
+      document.body.appendChild(modal);
+      const closeButton = modal.querySelector(".close-button");
+      closeButton.addEventListener("click", () => {
+        document.body.removeChild(modal);
+      });
+    }
+
+    // --------------------- Medication Link Event Listener ---------------------
+    // This event listener catches clicks on any medication link and opens its modal.
+    document.addEventListener("click", async (event) => {
+      if (event.target && event.target.classList.contains("medication-link")) {
+        event.preventDefault();
+        const medicationName = event.target.dataset.medication;
+        try {
+          const medDocRef = doc(db, "Medication Information", medicationName);
+          const docSnap = await getDoc(medDocRef);
+          if (docSnap.exists()) {
+            const medData = docSnap.data();
+            displayMedicationInfo(medData);
+          } else {
+            alert("Medication information not found!");
+          }
+        } catch (error) {
+          console.error("Error fetching medication info:", error);
+        }
+      }
     });
 
-    try {
-        const user = await getAuth().currentUser;
-        if (user && patientData.name && patientData.dob) {
-            const patientRef = query(
+    // --------------------- QA Tab Functions ---------------------
+
+    // Global array to store QA entries
+    window.qaEntries = [];
+
+    async function fetchQAEntries() {
+      const querySnapshot = await getDocs(collection(db, "QA"));
+      const entries = [];
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.timestamp) {
+          data.id = doc.id;
+          // Convert Firestore timestamp to JavaScript Date
+          data.timestamp = data.timestamp.toDate();
+          entries.push(data);
+        }
+      });
+      // Sort entries by timestamp ascending
+      entries.sort((a, b) => a.timestamp - b.timestamp);
+      window.qaEntries = entries;
+      populateQAFilter(entries);
+      displayQAEntries(entries);
+    }
+
+    function populateQAFilter(entries) {
+      const filterSelect = document.getElementById("qa-filter");
+      // Create a set of unique date strings using locale date string
+      const datesSet = new Set();
+      entries.forEach(entry => {
+        const dateStr = entry.timestamp.toLocaleDateString();
+        datesSet.add(dateStr);
+      });
+      // Clear existing options except "All Dates"
+      filterSelect.innerHTML = `<option value="all">All Dates</option>`;
+      Array.from(datesSet).sort().forEach(date => {
+        const option = document.createElement("option");
+        option.value = date;
+        option.textContent = date;
+        filterSelect.appendChild(option);
+      });
+    }
+
+    function displayQAEntries(entries) {
+      const filterSelect = document.getElementById("qa-filter");
+      let selectedDate = filterSelect.value;
+      const qaListDiv = document.getElementById("qa-list");
+      qaListDiv.innerHTML = "";
+      const filtered = selectedDate === "all" ? entries : entries.filter(entry => entry.timestamp.toLocaleDateString() === selectedDate);
+      if (filtered.length === 0) {
+        qaListDiv.textContent = "No QA entries for the selected date.";
+        return;
+      }
+      filtered.forEach(entry => {
+        // Create a link for each QA entry displaying date and time
+        const timeStr = entry.timestamp.toLocaleTimeString();
+        const link = document.createElement("a");
+        link.href = "#";
+        link.textContent = entry.timestamp.toLocaleDateString() + " " + timeStr;
+        link.classList.add("qa-entry-link");
+        link.dataset.entryId = entry.id;
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          displayQAEntryDetail(entry);
+        });
+        const div = document.createElement("div");
+        div.appendChild(link);
+        qaListDiv.appendChild(div);
+      });
+    }
+
+    function displayQAEntryDetail(entry) {
+      const detailHTML = `
+        <h3>QA Entry - ${entry.timestamp.toLocaleDateString()} ${entry.timestamp.toLocaleTimeString()}</h3>
+        <p><strong>Question:</strong> ${entry.question || "N/A"}</p>
+        <p><strong>Answer:</strong> ${entry.answer || "N/A"}</p>
+      `;
+      const modal = document.createElement("div");
+      modal.id = "qa-modal";
+      modal.innerHTML = `
+        <div class="modal-content">
+          <span class="close-button">&times;</span>
+          ${detailHTML}
+        </div>
+      `;
+      document.body.appendChild(modal);
+      const closeButton = modal.querySelector(".close-button");
+      closeButton.addEventListener("click", () => {
+        document.body.removeChild(modal);
+      });
+    }
+
+    document.getElementById("qa-filter").addEventListener("change", () => {
+      displayQAEntries(window.qaEntries);
+    });
+
+    // --------------------- Modal & Form Event Listeners ---------------------
+
+    document.getElementById("add-data-button").addEventListener("click", () => {
+      document.getElementById("add-data-modal").classList.add("visible");
+    });
+
+    document.getElementById("open-medication-modal").addEventListener("click", () => {
+      document.getElementById("add-medication-modal").classList.add("visible");
+    });
+
+    document.getElementById("close-modal").addEventListener("click", () => {
+      document.getElementById("add-data-modal").classList.remove("visible");
+    });
+
+    document.getElementById("close-medication-modal").addEventListener("click", () => {
+      document.getElementById("add-medication-modal").classList.remove("visible");
+    });
+
+    document.getElementById("logout-button").addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        alert("You have been logged out.");
+        window.location.href = "index.html";
+      } catch (error) {
+        console.error("Logout error:", error.message);
+        alert("Failed to log out: " + error.message);
+      }
+    });
+
+    document.getElementById("add-data-form").addEventListener('submit', function(event) {
+      event.preventDefault();
+      const Name = document.getElementById('name').value;
+      const DOB = document.getElementById('dob').value;
+      const gender = document.getElementById('gender').value;
+      const emergencyContactName = document.getElementById('emergency_contact.name').value;
+      const emergencyContactPhone = document.getElementById('emergency_contact.phone').value;
+      const emergencyContactEmail = document.getElementById('emergency_contact.email').value;
+      
+      const conditions = [];
+      const conditionInputs = document.querySelectorAll('[name="conditions[]"]');
+      const medicationInputs = document.querySelectorAll('[name="medications[]"]');
+
+      conditionInputs.forEach((input, index) => {
+        const condition = input.value;
+        const medications = medicationInputs[index].value.split(',').map(med => med.trim());
+        conditions.push({ condition, medications });
+      });
+
+      function addPatientData() {
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            try {
+              const patientData = {
+                name: Name,
+                dob: DOB,
+                gender: gender,
+                emergency_contact: {
+                  name: emergencyContactName,
+                  phone: emergencyContactPhone,
+                  email: emergencyContactEmail,
+                },
+                medical_conditions: conditions.reduce((acc, { condition, medications }) => {
+                  acc[condition] = { medications };
+                  return acc;
+                }, {}),
+              };
+
+              const patientQuery = query(
                 collection(db, "Patient Information"),
                 where("name", "==", patientData.name),
                 where("dob", "==", patientData.dob)
-            );
-            const querySnapshot = await getDocs(patientRef);
+              );
 
-            if (!querySnapshot.empty) {
-                // Assuming the first match is correct, you can modify this as per your needs
-                const patientDoc = querySnapshot.docs[0];
-                await updateDoc(patientDoc.ref, {
-                    medication_schedule: schedule
-                });
+              const querySnapshot = await getDocs(patientQuery);
 
-                console.log("Medication schedule updated successfully in Firestore.");
-            } else {
-                console.warn("No patient data found with the provided name and dob.");
-            }
-        } else {
-            console.warn("User is not authenticated or name/dob is missing.");
-        }
-    } catch (error) {
-        console.error("Error updating medication schedule in Firestore:", error);
-    }
-
-    return { patientName: patientData.name, schedule };
-}
-
-// Helper function to parse time strings (e.g., "8:00 AM") into minutes for sorting
-function parseTime(timeStr) {
-    const [time, period] = timeStr.split(' ');
-    const [hours, minutes] = time.split(':').map(Number);
-    const adjustedHours = period === "PM" && hours !== 12 ? hours + 12 : hours;
-    return adjustedHours * 60 + minutes;
-}
-
-function displaySchedule(patientName, schedule) {
-    if (!schedule || schedule.length === 0) {
-        console.error("Invalid or empty schedule.");
-        return;
-    }
-
-    const scheduleHTML = `
-        <h3>Medication Schedule For: ${patientName}</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>Medication</th>
-                    <th>Dosage</th>
-                    <th>Condition</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${schedule
-                    .map(
-                        (entry) => `
-                        <tr>
-                            <td>${entry.time}</td>
-                            <td>${entry.medication}</td>
-                            <td>${entry.dosage}</td>
-                            <td>${entry.condition}</td>
-                        </tr>
-                    `
-                    )
-                    .join("")}
-            </tbody>
-        </table>
-        <button class="close-schedule-button">Close</button>
-    `;
-
-    const modal = document.createElement("div");
-    modal.id = "schedule-modal";
-    modal.innerHTML = `
-        <div class="modal-content">
-            ${scheduleHTML}
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    modal.querySelector(".close-schedule-button").addEventListener("click", () => {
-        document.body.removeChild(modal);
-    });
-}
-
-document.addEventListener("click", async (event) => {
-    if (event.target && event.target.classList.contains("generate-schedule-button")) {
-        const patientName = event.target.dataset.patientName;
-        const patientDob = event.target.dataset.patientDob;  // Make sure dob is included in the data attributes
-
-        try {
-            const docRef = query(
-                collection(db, "Patient Information"),
-                where("name", "==", patientName),
-                where("dob", "==", patientDob)
-            );
-            const docSnap = await getDocs(docRef);
-
-            if (!docSnap.empty) {
-                const patientData = docSnap.docs[0].data();
-                const result = await generateMedicationSchedule(patientData);
-                if (result) {
-                    displaySchedule(result.patientName, result.schedule);
-                }
-            } else {
-                alert("No patient data found!");
-            }
-        } catch (error) {
-            console.error("Error fetching patient data:", error);
-        }
-    }
-});
-
-
-
-        // Add event listener to "Add Data" button
-        document.getElementById("add-data-button").addEventListener("click", () => {
-            // Show the modal by adding the 'visible' class
-            document.getElementById("add-data-modal").classList.add("visible");
-        });
-
-        // Add event listener to close "Add Data" modal button
-        document.getElementById("close-modal").addEventListener("click", () => {
-            // Hide the modal by removing the 'visible' class
-            document.getElementById("add-data-modal").classList.remove("visible");
-        });
-
-        document.getElementById("logout-button").addEventListener("click", async () => {
-            try {
-                await signOut(auth);
-                alert("You have been logged out.");
-                window.location.href = "index.html";
+              if (!querySnapshot.empty) {
+                const docRef = querySnapshot.docs[0].ref;
+                await updateDoc(docRef, patientData);
+                console.log("Existing patient data updated successfully!");
+              } else {
+                await addDoc(collection(db, "Patient Information"), patientData);
+                console.log("No match found. New patient data added successfully!");
+              }
             } catch (error) {
-                console.error("Logout error:", error.message);
-                alert("Failed to log out: " + error.message);
+              console.error("Error adding or updating data:", error);
             }
+          } else {
+            console.warn("No user is authenticated.");
+          }
         });
+      }
 
-        document.getElementById("add-data-form").addEventListener('submit', function(event) {
-            event.preventDefault();
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          console.log("User is authenticated. Proceeding with adding patient data...");
+          addPatientData();
+        } else {
+          console.log("User is not authenticated yet.");
+        }
+      });
+    });
 
-            const Name = document.getElementById('name').value;
-            const DOB = document.getElementById('dob').value;
-            const gender = document.getElementById('gender').value;
-            const emergencyContactName = document.getElementById('emergency_contact.name').value;
-            const emergencyContactPhone = document.getElementById('emergency_contact.phone').value;
-            const emergencyContactEmail = document.getElementById('emergency_contact.email').value;
-            
-            const conditions = [];
-            const conditionInputs = document.querySelectorAll('[name="conditions[]"]');
-            const medicationInputs = document.querySelectorAll('[name="medications[]"]');
+    document.getElementById("add-medication-form").addEventListener('submit', async function(event) {
+      event.preventDefault();
+      const medication = document.getElementById('medication').value;
+      const common_side_effects = document.getElementById('common_side_effects').value;
+      const severe_side_effects = document.getElementById('severe_side_effects').value;
+      const drug_interactions = document.getElementById('drug_interactions').value;
+      const other_interactions = document.getElementById('other_interactions').value;
+      const medical_conditions = document.getElementById('medical_conditions').value;
+      const inventory = parseInt(document.getElementById('inventory').value, 10);
+      const compartment_id = parseInt(document.getElementById('compartment_id').value, 10);
 
-            conditionInputs.forEach((input, index) => {
-                const condition = input.value;
-                const medications = medicationInputs[index].value.split(',').map(med => med.trim());
-                conditions.push({ condition, medications });
-            });
+      const dosage = {};
+      document.querySelectorAll("[name='dosage_conditions[]']").forEach((input, index) => {
+        const condition = input.value;
+        const instruction = document.querySelectorAll("[name='dosage_instructions[]']")[index].value;
+        dosage[condition] = instruction;
+      });
 
+      const usage_instructions = {};
+      document.querySelectorAll("[name='usage_keys[]']").forEach((input, index) => {
+        const key = input.value;
+        const value = document.querySelectorAll("[name='usage_values[]']")[index].value;
+        usage_instructions[key] = value;
+      });
 
+      const medicationData = {
+        common_side_effects,
+        severe_side_effects,
+        drug_interactions,
+        other_interactions,
+        medical_conditions,
+        inventory,
+        compartment_id,
+        dosage,
+        usage_instructions
+      };
 
+      try {
+        const medDocRef = doc(db, "Medication Information", medication);
+        const docSnap = await getDoc(medDocRef);
+        if (docSnap.exists()) {
+          await updateDoc(medDocRef, medicationData);
+          console.log(`Updated existing medication: ${medication}`);
+        } else {
+          await setDoc(medDocRef, { medication, ...medicationData });
+          console.log(`Added new medication: ${medication}`);
+        }
+      } catch (error) {
+        console.error("Error adding/updating medication:", error);
+      }
+    });
 
-            function addPatientData() {
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                console.log("Authenticated user:", user.email);
+    // Add new condition input field
+    document.getElementById("conditions-container").addEventListener("click", function(event) {
+      if (event.target && event.target.classList.contains("add-condition")) {
+        const conditionGroup = document.createElement("div");
+        conditionGroup.classList.add("condition-group");
+        conditionGroup.innerHTML = `
+          <label for="condition">Condition:</label>
+          <input type="text" name="conditions[]" required>
+          <label for="medication">Medication(s) for this condition:</label>
+          <input type="text" name="medications[]" required>
+          <button type="button" class="remove-condition">Remove Condition</button>
+        `;
+        document.getElementById("conditions-container").appendChild(conditionGroup);
+      }
+    });
 
-                try {
-                    // Patient data
-                    const patientData = {
-                    name: Name,
-                    dob: DOB,
-                    gender: gender,
-                    emergency_contact: {
-                        name: emergencyContactName,
-                        phone: emergencyContactPhone,
-                        email: emergencyContactEmail,
-                    },
-                    medical_conditions: conditions.reduce((acc, { condition, medications }) => {
-                        acc[condition] = { medications }; // Link condition with medications
-                        return acc;
-                    }, {}),
-                    };
+    document.getElementById("conditions-container").addEventListener("click", function(event) {
+      if (event.target && event.target.classList.contains("remove-condition")) {
+        event.target.closest(".condition-group").remove();
+      }
+    });
 
-                    // Step 1: Query for existing patient with the same name and age
-                    const patientQuery = query(
-                    collection(db, "Patient Information"),
-                    where("name", "==", patientData.name),
-                    where("dob", "==", patientData.dob)
-                    );
+    // Add new dosage input field
+    document.getElementById("dosage-container").addEventListener("click", function(event) {
+      if (event.target && event.target.classList.contains("add-dosage")) {
+        const dosageGroup = document.createElement("div");
+        dosageGroup.classList.add("dosage-group");
+        dosageGroup.innerHTML = `
+          <label for="dosage-condition">Condition:</label>
+          <input type="text" name="dosage_conditions[]" required>
+          <label for="dosage-instruction">Dosage:</label>
+          <input type="text" name="dosage_instructions[]" required>
+          <button type="button" class="remove-dosage">Remove Dosage</button>
+        `;
+        document.getElementById("dosage-container").appendChild(dosageGroup);
+      }
+    });
 
-                    const querySnapshot = await getDocs(patientQuery);
+    document.getElementById("dosage-container").addEventListener("click", function(event) {
+      if (event.target && event.target.classList.contains("remove-dosage")) {
+        event.target.closest(".dosage-group").remove();
+      }
+    });
 
-                    if (!querySnapshot.empty) {
-                    // Step 2: If a match is found, update the first matching document
-                    const docRef = querySnapshot.docs[0].ref;
-                    await updateDoc(docRef, patientData);
-                    console.log("Existing patient data updated successfully!");
-                    } else {
-                    // Step 3: If no match is found, create a new document
-                    await addDoc(collection(db, "Patient Information"), patientData);
-                    console.log("No match found. New patient data added successfully!");
-                    }
-                } catch (error) {
-                    console.error("Error adding or updating data:", error);
-                }
-                } else {
-                console.warn("No user is authenticated.");
-                }
-            });
-            }
+    // Add new usage instruction input field
+    document.getElementById("usage-container").addEventListener("click", function(event) {
+      if (event.target && event.target.classList.contains("add-usage")) {
+        const usageGroup = document.createElement("div");
+        usageGroup.classList.add("usage-group");
+        usageGroup.innerHTML = `
+          <label for="usage-key">Instruction Type:</label>
+          <input type="text" name="usage_keys[]" required>
+          <label for="usage-value">Instruction:</label>
+          <input type="text" name="usage_values[]" required>
+          <button type="button" class="remove-usage">Remove Usage Instruction</button>
+        `;
+        document.getElementById("usage-container").appendChild(usageGroup);
+      }
+    });
 
-            // Call addPatientData after authentication is completed
-            onAuthStateChanged(auth, (user) => {
-            if (user) {
-                console.log("User is authenticated. Proceeding with adding patient data...");
-                addPatientData();
-            } else {
-                console.log("User is not authenticated yet.");
-            }
-            });
+    document.getElementById("usage-container").addEventListener("click", function(event) {
+      if (event.target && event.target.classList.contains("remove-usage")) {
+        event.target.closest(".usage-group").remove();
+      }
+    });
 
-        })
+    const updateConsole = document.getElementById("update-console");
+    function logUpdate(message) {
+      const newUpdate = document.createElement("div");
+      newUpdate.textContent = message;
+      updateConsole.appendChild(newUpdate);
+      updateConsole.scrollTop = updateConsole.scrollHeight;
+    }
 
-        // Add new condition input field when the user clicks "Add Another Condition"
-        document.getElementById("conditions-container").addEventListener("click", function(event) {
-            if (event.target && event.target.classList.contains("add-condition")) {
-                const conditionGroup = document.createElement("div");
-                conditionGroup.classList.add("condition-group");
-
-                // Create condition input
-                conditionGroup.innerHTML = `
-                    <label for="condition">Condition:</label>
-                    <input type="text" name="conditions[]" required>
-
-                    <label for="medication">Medication(s) for this condition:</label>
-                    <input type="text" name="medications[]" required>
-
-                    <button type="button" class="remove-condition">Remove Condition</button>
-                `;
-
-                document.getElementById("conditions-container").appendChild(conditionGroup);
-            }
+    function listenForUpdates(collectionName) {
+      const dataCollection = collection(db, collectionName);
+      let initialized = false;
+      onSnapshot(dataCollection, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          const docData = change.doc.data();
+          const docId = change.doc.id;
+          let displayName = collectionName === "Patient Information" ? docData.name || "Unknown Patient" : docId;
+          if (!initialized && change.type === "added") return;
+          if (change.type === "modified") {
+            logUpdate(`${collectionName} record updated: ${displayName}`);
+          } else if (change.type === "added") {
+            logUpdate(`New ${collectionName} added: ${displayName}`);
+          } else if (change.type === "removed") {
+            logUpdate(`${collectionName} record deleted: ${displayName}`);
+          }
         });
+        initialized = true;
+      }, (error) => {
+        console.error(`Error listening to ${collectionName}:`, error);
+      });
+    }
 
-        // Remove condition input field
-        document.getElementById("conditions-container").addEventListener("click", function(event) {
-            if (event.target && event.target.classList.contains("remove-condition")) {
-                event.target.closest(".condition-group").remove();
-            }
-        });
-    </script>
+    listenForUpdates("Patient Information");
+    listenForUpdates("Medication Information");
 
+    // Fetch QA entries on load
+    fetchQAEntries();
+
+    // Also fetch patient data on load
+    fetchPatientData();
+  </script>
+  <div id="update-console" style="border: 1px solid black; padding: 10px; max-height: 300px; overflow-y: auto;">
+    <strong>Update Console:</strong>
+  </div>
 </body>
 </html>
